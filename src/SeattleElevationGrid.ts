@@ -101,7 +101,7 @@ async function loadElevationData(): Promise<ElevationData> {
 
   try {
     console.log("Loading Seattle elevation grid data...");
-    const response = await fetch('./src/seattle_elevation_grid.json');
+    const response = await fetch('./assets/seattle_elevation_grid.json');
     if (!response.ok) {
       throw new Error(`Failed to load elevation data: ${response.statusText}`);
     }

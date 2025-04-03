@@ -1,0 +1,80 @@
+name: Build and Deploy
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build with Vite
+        run: npm run build
+      
+      - name: Create .nojekyll file
+        run: touch dist/.nojekyll
+      
+      - name: Copy data files
+        run: |
+          mkdir -p dist/seattle_data/roads
+          mkdir -p dist/seattle_data/shorline
+          
+          # Copy data files if they exist
+          if [ -f "seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson" ]; then
+            cp seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson dist/seattle_data/roads/
+          fi
+          
+          if [ -f "seattle_data/shorline/Shoreline_8101522534321349051.geojson" ]; then
+            cp seattle_data/shorline/Shoreline_8101522534321349051.geojson dist/seattle_data/shorline/
+          fi
+          
+          # Copy elevation data to assets directory
+          if [ -f "src/seattle_elevation_grid.json" ]; then
+            mkdir -p dist/assets
+            cp src/seattle_elevation_grid.json dist/assets/
+          fi
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  # Deploy job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 

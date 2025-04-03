@@ -1,0 +1,53 @@
+name: Deploy to GitHub Pages (Simple)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build project (skip TypeScript checks)
+        run: |
+          npx vite build
+          # Create .nojekyll file to prevent GitHub Pages from ignoring files that begin with an underscore
+          touch dist/.nojekyll
+          # Copy essential data files to dist
+          mkdir -p dist/seattle_data/roads
+          mkdir -p dist/seattle_data/shorline
+          mkdir -p dist/assets
+          # Copy elevation data
+          if [ -f "src/seattle_elevation_grid.json" ]; then
+            cp src/seattle_elevation_grid.json dist/assets/
+          fi
+          # Copy road data
+          if [ -f "seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson" ]; then
+            cp seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson dist/seattle_data/roads/
+          fi
+          # Copy shoreline data
+          if [ -f "seattle_data/shorline/Shoreline_8101522534321349051.geojson" ]; then
+            cp seattle_data/shorline/Shoreline_8101522534321349051.geojson dist/seattle_data/shorline/
+          fi
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist
+          clean: true 
