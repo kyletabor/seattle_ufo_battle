@@ -1,13 +1,12 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Set the base path to match your repository name
-  // For a repository named 'seattle_ufo_battle', the base would be '/seattle_ufo_battle/'
-  base: '/seattle_ufo_battle/',
+  // Base path for assets (not needed since we're deploying from the root)
+  base: './',
   
   // Build configuration
   build: {
-    // Output directory (default is 'dist')
+    // Output directory
     outDir: 'dist',
     
     // Generate source maps for debugging
@@ -16,8 +15,7 @@ export default defineConfig({
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     
-    // Don't fail on TypeScript errors during build
-    // This allows us to build despite the TypeScript errors
+    // Settings to help with TypeScript errors
     emptyOutDir: true,
     minify: true,
   },

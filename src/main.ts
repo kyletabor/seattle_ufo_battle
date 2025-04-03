@@ -522,12 +522,32 @@ async function loadTerrainAndEnvironment() {
  * Adds a fallback plane to the scene if terrain loading fails
  */
 function addEmergencyFallbackPlane() {
-	console.warn("Using emergency fallback plane for terrain");
+	console.error("❌ USING EMERGENCY FALLBACK PLANE - TERRAIN LOADING FAILED");
+	
+	// Create an error text canvas
+	const canvas = document.createElement('canvas');
+	canvas.width = 1024;
+	canvas.height = 1024;
+	const context = canvas.getContext('2d');
+	if (context) {
+		context.fillStyle = 'red';
+		context.fillRect(0, 0, canvas.width, canvas.height);
+		context.fillStyle = 'white';
+		context.font = '48px Arial';
+		context.textAlign = 'center';
+		context.fillText('ERROR: TERRAIN LOADING FAILED', canvas.width/2, canvas.height/2 - 100);
+		context.fillText('USING FALLBACK PLANE', canvas.width/2, canvas.height/2);
+		context.font = '24px Arial';
+		context.fillText('Check console for details', canvas.width/2, canvas.height/2 + 100);
+	}
+	const errorTexture = new THREE.CanvasTexture(canvas);
+	
 	const planeGeometry = new THREE.PlaneGeometry(5000, 5000);
 	planeGeometry.rotateX(-Math.PI / 2); // Make horizontal
 	
 	const planeMaterial = new THREE.MeshStandardMaterial({
-		color: 0x228822,
+		map: errorTexture,
+		color: 0xff0000,
 		metalness: 0.1,
 		roughness: 0.7
 	});
@@ -552,7 +572,18 @@ function addEmergencyFallbackPlane() {
 	waterPlane.position.y = -5;
 	scene.add(waterPlane);
 	
-	console.log("Fallback terrain added");
+	// Add a big error marker cube in the center
+	const errorCubeGeometry = new THREE.BoxGeometry(200, 200, 200);
+	const errorCubeMaterial = new THREE.MeshStandardMaterial({
+		color: 0xff0000,
+		emissive: 0xff0000,
+		emissiveIntensity: 0.5
+	});
+	const errorCube = new THREE.Mesh(errorCubeGeometry, errorCubeMaterial);
+	errorCube.position.set(0, 100, 0);
+	scene.add(errorCube);
+	
+	console.error("⚠️ Fallback terrain added - game will not function correctly");
 }
 
 /**
@@ -594,6 +625,12 @@ function onWindowResize() {
  * Main animation loop
  */
 function animate() {
+	// Debug frame counter
+	frameCount++;
+	if (frameCount % 300 === 0) { // Log every 300 frames (approximately every 5 seconds at 60fps)
+		console.log(`Animation frame: ${frameCount} - Game state: ${gameStatus}, Paused: ${isPaused}`);
+	}
+	
 	// Get delta time for physics and animations
 	const deltaTime = clock.getDelta();
 	

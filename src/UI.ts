@@ -35,6 +35,21 @@ export class UI {
         // Check for essential elements from index.html
         if (!this.speedElement) {
             console.error("Speed indicator UI element (#speed-indicator) not found in index.html!");
+        } else {
+            // Explicitly position the speed indicator in the bottom right corner
+            this.speedElement.style.position = 'absolute';
+            this.speedElement.style.top = 'auto'; // Clear any top position
+            this.speedElement.style.left = 'auto'; // Clear any left position
+            this.speedElement.style.bottom = '20px';
+            this.speedElement.style.right = '20px';
+            this.speedElement.style.color = '#bbb';
+            this.speedElement.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            this.speedElement.style.padding = '10px 15px';
+            this.speedElement.style.fontFamily = 'Arial, sans-serif';
+            this.speedElement.style.fontSize = '18px';
+            this.speedElement.style.borderRadius = '10px';
+            this.speedElement.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+            this.speedElement.style.zIndex = '1000';
         }
         // Removed check for pause indicator
         // if (!this.pauseIndicator) {
@@ -240,6 +255,12 @@ export class UI {
         controlsDiv.style.zIndex = '1000'; // Ensure it's above other elements
         controlsDiv.style.lineHeight = '1.6'; // Better line spacing
         controlsDiv.style.display = 'block'; // Always visible
+        // Add width constraints to prevent expanding beyond needed space
+        controlsDiv.style.width = 'auto';
+        controlsDiv.style.maxWidth = '300px';
+        controlsDiv.style.maxHeight = 'auto';
+        // Add overflow handling
+        controlsDiv.style.overflow = 'hidden';
         controlsDiv.innerHTML = `
             <div style="font-weight: bold; margin-bottom: 8px; font-size: 20px; text-align: center; text-decoration: underline;">CONTROLS</div>
             <div><span style="font-weight: bold;">Flight:</span> W/S or ↑/↓ = Pitch</div>
@@ -275,12 +296,11 @@ export class UI {
                 container.style.width = '100%';
                 container.style.height = '100%';
                 container.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                container.style.display = 'flex';
                 container.style.flexDirection = 'column';
                 container.style.justifyContent = 'center';
                 container.style.alignItems = 'center';
                 container.style.zIndex = '1000';
-                container.style.display = 'none'; // Start hidden
+                container.style.display = 'none'; // Set display to none only once
                 document.body.appendChild(container);
             } else {
                  // Ensure existing container starts hidden

@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { projectToGameCoords, isCentered, getScaleFactor } from './coordinateUtils';
+import { resolveResourcePath, getDataPaths } from './utils/pathResolver';
 
 // Configuration
 const SHORELINE_HEIGHT_OFFSET = 50; // Increased to 50 meters above terrain for better visibility 
@@ -27,11 +28,14 @@ export async function loadAndRenderShorelines(scene: THREE.Scene): Promise<void>
     console.log("Loading shoreline data...");
     
     try {
-      // Attempt to load the shoreline data, but handle the case where the file doesn't exist
-      const response = await fetch('./seattle_data/shorline/Shoreline_8101522534321349051.geojson');
-      if (!response.ok) {
-        throw new Error(`Failed to load shoreline data: ${response.statusText}`);
-      }
+      // Define paths to try in order
+      const paths = getDataPaths(
+        './seattle_data/shorline/seattle_shoreline.geojson',   // Development path
+        './seattle_data/shorline/seattle_shoreline.geojson'    // Production path (same in this case)
+      );
+      
+      // Use our utility to try all possible paths
+      const response = await resolveResourcePath(paths);
       
       const data = await response.json();
       console.log("Shoreline GeoJSON loaded successfully");

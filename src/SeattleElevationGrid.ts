@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { projectToGameCoords, setProjectionCenter, setTerrainSize } from './coordinateUtils';
 import { initTerrainInfoDisplay } from './TerrainInfoDisplay';
+import { resolveResourcePath, getDataPaths } from './utils/pathResolver';
 // Comment out road renderer import as it's no longer needed
 // import { loadAndRenderSeattleRoads } from './SeattleRoadsRenderer';
 
@@ -101,10 +102,21 @@ async function loadElevationData(): Promise<ElevationData> {
 
   try {
     console.log("Loading Seattle elevation grid data...");
-    const response = await fetch('./assets/seattle_elevation_grid.json');
-    if (!response.ok) {
-      throw new Error(`Failed to load elevation data: ${response.statusText}`);
-    }
+    
+    // Define paths to try in order
+    const paths = getDataPaths(
+      './src/seattle_elevation_grid.json',       // Development path
+      './assets/seattle_elevation_grid.json'      // Production path
+    );
+    
+    // Add more fallback paths to try
+    paths.push('/seattle_elevation_grid.json');   // Root path
+    paths.push('/src/seattle_elevation_grid.json'); // Absolute path with src
+    
+    console.log(`[ElevationGrid] Trying ${paths.length} paths for elevation data: ${paths.join(', ')}`);
+    
+    // Use our utility to try all possible paths
+    const response = await resolveResourcePath(paths);
     
     const data = await response.json() as ElevationData;
     elevationData = data;

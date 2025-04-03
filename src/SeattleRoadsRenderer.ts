@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { projectToGameCoords } from './coordinateUtils';
 // Import the function to get terrain elevation
 import { getTerrainElevation } from './SeattleElevationGrid';
+import { resolveResourcePath, getDataPaths } from './utils/pathResolver';
 
 // Configuration
 const ROAD_HEIGHT_OFFSET = 0.5; // Keep a very small offset above terrain
@@ -24,10 +25,15 @@ const ROAD_OPACITY = 0.9; // Opacity of road materials
 export async function loadAndRenderSeattleRoads(scene: THREE.Scene): Promise<void> {
   try {
     console.log("Loading Seattle roads...");
-    const response = await fetch('./seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson');
-    if (!response.ok) {
-      throw new Error('Failed to load roads data');
-    }
+    
+    // Define paths to try in order
+    const paths = getDataPaths(
+      './seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson',   // Development path
+      './seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson'    // Production path (same in this case)
+    );
+    
+    // Use our utility to try all possible paths
+    const response = await resolveResourcePath(paths);
     
     const data = await response.json();
     console.log(`Seattle roads GeoJSON loaded successfully. Contains ${data.features.length} features.`);
