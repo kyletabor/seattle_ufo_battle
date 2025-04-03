@@ -22,7 +22,8 @@ export default defineConfig({
   
   // Server configuration for development
   server: {
-    port: 3000,
+    port: 3002,
+    strictPort: true,
     open: true,
   },
   
