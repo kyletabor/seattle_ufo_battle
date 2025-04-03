@@ -1,0 +1,9 @@
+Starting geotiff test...
+Input file path: /Users/kyletabor/AI/seattle_ufo_battle/seattle_data/elevation_data/USGS_13_n48w123_20240327.tif
+File exists: true
+Attempting to load GeoTIFF file...
+GeoTIFF loaded successfully!
+Image dimensions: 10812 x 10812
+Test completed
+Error loading GeoTIFF: TypeError: image.getGeoTransform is not a function
+    at testGeoTiff (file:///Users/kyletabor/AI/seattle_ufo_battle/test_geotiff.js:29:40)
