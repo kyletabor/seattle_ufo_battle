@@ -27,6 +27,7 @@ mkdir -p docs/seattle_data/roads
 mkdir -p docs/seattle_data/shorline
 mkdir -p docs/assets
 mkdir -p docs/src
+mkdir -p docs/audio
 
 # Copy seattle_elevation_grid.json to both assets and src (to support different path configurations)
 echo "Copying elevation grid data..."
@@ -56,6 +57,53 @@ if [ -f "seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson" ]; 
 else
   echo "WARNING: seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson not found!"
 fi
+
+# Copy audio files (more thorough approach)
+echo "Copying audio files..."
+if [ -d "public/audio" ]; then
+  echo "  - Copying audio directory from public/audio to docs/audio"
+  cp -r public/audio/* docs/audio/
+else
+  echo "WARNING: public/audio directory not found!"
+fi
+
+# Create audio-paths.js to fix audio paths on GitHub Pages
+echo "Creating audio path correction script..."
+cat > docs/audio-paths.js << 'EOL'
+// audio-paths.js - Dynamically adjusts audio paths for GitHub Pages deployment
+
+(function() {
+  // Function to rewrite audio paths based on current location
+  function adjustAudioPaths() {
+    // Check if we're on GitHub Pages
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    
+    if (isGitHubPages) {
+      console.log('GitHub Pages detected - adjusting audio paths');
+      
+      // Create a global variable that can be used by the AudioManager
+      window.AUDIO_BASE_PATH = './audio';
+      
+      console.log(`Audio base path set to: ${window.AUDIO_BASE_PATH}`);
+      
+      // Also patch any fetch requests to audio files
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options) {
+        if (typeof url === 'string' && url.startsWith('/audio/')) {
+          // Replace /audio/ with ./audio/
+          const newUrl = url.replace('/audio/', './audio/');
+          console.log(`Rewriting audio URL from ${url} to ${newUrl}`);
+          return originalFetch(newUrl, options);
+        }
+        return originalFetch(url, options);
+      };
+    }
+  }
+  
+  // Run the adjustment function when the page loads
+  window.addEventListener('DOMContentLoaded', adjustAudioPaths);
+})();
+EOL
 
 # Verify the copied files
 echo ""
@@ -92,6 +140,17 @@ if [ ! -f "docs/seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojs
 else
   echo "✅ FOUND: docs/seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson"
 fi
+
+# Check audio files
+AUDIO_FILES=("spaceman_showdown.mp3" "laser_shoot.mp3" "loud-thud.mp3" "explosion.mp3")
+for audio_file in "${AUDIO_FILES[@]}"; do
+  if [ ! -f "docs/audio/$audio_file" ]; then
+    echo "❌ MISSING: docs/audio/$audio_file"
+    MISSING_FILES=$((MISSING_FILES+1))
+  else
+    echo "✅ FOUND: docs/audio/$audio_file"
+  fi
+done
 
 # Summary
 echo ""
