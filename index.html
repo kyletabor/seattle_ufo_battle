@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seattle UFO Battle</title>
+    <!-- Audio will be initialized by AudioManager.ts -->
+  </head>
+  <body>
+    <div id="app">
+      <!-- Hamburger Menu Icon -->
+      <div id="hamburger-menu">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <!-- UI Elements managed by UI.ts -->
+      <div id="speed-indicator">Speed: 0.0</div>
+      <!-- Crash Screen Elements -->
+      <div id="crashMessage" style="display: none; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); color: red; font-size: 48px; font-weight: bold; z-index: 10;">CRASH!</div>
+      <div id="restartPrompt" style="display: none; position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; z-index: 10;">Press 'R' to Restart</div>
+    </div>
+    <div id="start-modal">
+        <div id="modal-content">
+            <h1>Seattle UFO Battle Game</h1>
+            <h2>Help save the City of Seattle from the UFO invasion!</h2>
+            <p class="press-key">Press any key to play</p>
+            <div class="toggles">
+                <label>
+                    <input type="checkbox" id="sound-toggle" checked> Sound FX
+                </label>
+                <label>
+                    <input type="checkbox" id="music-toggle"> Grunge Music
+                </label>
+            </div>
+            <p class="copyright">© 2025 KT AI, LLC</p>
+        </div>
+    </div>
+    <!-- New Pause Modal -->
+    <div id="pause-modal" style="display: none;">
+        <div id="pause-modal-content">
+            <h1>Game Paused</h1>
+            <div class="toggles">
+                <label>
+                    <input type="checkbox" id="pause-sound-toggle"> Sound FX
+                </label>
+                <label>
+                    <input type="checkbox" id="pause-music-toggle"> Grunge Music
+                </label>
+            </div>
+            <p class="pause-instructions">Press 'R' to Restart | Press 'ESC' or 'P' to Continue</p>
+            <!-- New Buttons -->
+            <div class="modal-buttons">
+                 <button id="pause-about-button" class="modal-button">About Game</button>
+                 <button id="pause-share-button" class="modal-button">Share Game</button>
+            </div>
+            <p class="copyright">© 2025 KT AI, LLC</p>
+        </div>
+    </div>
+    <!-- New About Modal -->
+    <div id="about-modal" style="display: none;">
+        <div id="about-modal-content">
+             <button id="about-close-button">&times;</button> <!-- Close button -->
+             <h1>[ SEATTLE UFO BATTLE - ABOUT ]</h1>
+
+             <h2>[ Game Concept ]</h2>
+             <p>
+                 Welcome to Seattle UFO Battle! This is an experimental project exploring game development using AI assistance. Fly your plane through a stylized Seattle, defend the Space Needle from incoming UFOs, and see how long you can last!
+             </p>
+             <p>
+                 Built primarily with AI assistance to explore and learn. Expect some quirks – it's part of the fun!
+             </p>
+
+             <h2>[ How to Play ]</h2>
+             <ul class="controls-list">
+                 <li>W/S or ↑/↓ : Pitch Up/Down</li>
+                 <li>A/D or ←/→ : Roll Left/Right</li>
+                 <li>E : Accelerate</li>
+                 <li>Q : Brake/Decelerate</li>
+                 <li>SPACE : Shoot Laser</li>
+                 <li>C : Change Camera View</li>
+                 <li>P : Pause Game</li>
+             </ul>
+
+             <h2>[ Credits & Inspiration ]</h2>
+             <p>This project was created by Kyle Tabor as an exploration into AI-driven development.</p>
+             <p>Connect with Kyle:</p>
+             <ul class="links-list">
+                 <li><a href="https://github.com/kyletabor" target="_blank">GitHub</a></li>
+                 <li><a href="https://www.linkedin.com/in/kyle-tabor-77307616/" target="_blank">LinkedIn</a></li>
+             </ul>
+             <p>Inspiration & Learning:</p>
+              <ul class="links-list">
+                 <li>Peter Yang: <a href="https://www.linkedin.com/in/petergyang/" target="_blank">LinkedIn Profile</a></li>
+                 <li>Maven Course: <a href="https://maven.com/peter-yang/become-an-ai-powered-product-leader" target="_blank">"Become an AI-Powered Product Leader"</a></li>
+             </ul>
+
+             <!-- Share Button -->
+             <div class="modal-buttons" style="text-align: center; margin-top: 20px;">
+                  <button id="about-share-button" class="modal-button">Share Game</button>
+             </div>
+
+             <p class="copyright">© 2025 KT AI, LLC</p>
+        </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
