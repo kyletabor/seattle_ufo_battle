@@ -7,7 +7,7 @@ export default defineConfig({
   // Build configuration
   build: {
     // Output directory
-    outDir: 'dist',
+    outDir: 'docs',
     
     // Generate source maps for debugging
     sourcemap: true,
