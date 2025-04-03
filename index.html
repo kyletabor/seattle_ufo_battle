@@ -6,6 +6,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Seattle UFO Battle</title>
     <!-- Audio will be initialized by AudioManager.ts -->
+    <style>
+      /* Basic styling to make the app more visually appealing */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #111;
+        color: white;
+        overflow: hidden;
+      }
+      
+      #app {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      
+      #speed-indicator {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 5px 10px;
+        border-radius: 5px;
+        z-index: 100;
+      }
+      
+      #hamburger-menu {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 25px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        cursor: pointer;
+        z-index: 100;
+      }
+      
+      #hamburger-menu div {
+        width: 100%;
+        height: 5px;
+        background-color: white;
+        border-radius: 2px;
+      }
+      
+      #start-modal {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      
+      #modal-content, #pause-modal-content, #about-modal-content {
+        background-color: #222;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 600px;
+        text-align: center;
+      }
+      
+      h1, h2 {
+        margin: 10px 0;
+        color: #0af;
+      }
+      
+      .press-key {
+        font-size: 20px;
+        margin: 20px 0;
+        color: #0f0;
+      }
+      
+      .toggles {
+        margin: 15px 0;
+      }
+      
+      .copyright {
+        font-size: 12px;
+        margin-top: 20px;
+        color: #666;
+      }
+      
+      .modal-button {
+        background-color: #2a6496;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        margin: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      
+      .modal-button:hover {
+        background-color: #3a8bc6;
+      }
+      
+      .controls-list, .links-list {
+        text-align: left;
+        list-style-type: none;
+        padding-left: 10px;
+      }
+      
+      .controls-list li, .links-list li {
+        margin: 10px 0;
+      }
+      
+      #about-close-button {
+        float: right;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
@@ -104,6 +228,7 @@
              <p class="copyright">© 2025 KT AI, LLC</p>
         </div>
     </div>
-    <script type="module" src="./src/main.ts"></script>
+    <!-- We need to use a script tag with type="module" that points to a JavaScript file, not TypeScript -->
+    <script type="module" src="./main.js"></script>
   </body>
 </html>
