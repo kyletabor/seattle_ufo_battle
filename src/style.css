@@ -1,0 +1,396 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden; /* Prevent scrollbars */
+  background-color: #000; /* Default background if needed */
+}
+
+canvas {
+  display: block; /* Remove extra space below canvas */
+  position: absolute; /* Ensure canvas is positioned absolutely */
+  top: 0;
+  left: 0;
+  z-index: 0; /* Put canvas behind UI elements */
+}
+
+/* Style for app container - keep it visible but don't let it affect layout */
+#app {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let clicks pass through to canvas */
+  z-index: 1; /* Keep UI above canvas */
+}
+
+/* Re-enable pointer events for specific UI elements that need interaction */
+#app > * {
+  pointer-events: auto;
+}
+
+/* Style for the speed indicator element from index.html */
+#speed-indicator {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  color: #bbb;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 10px 15px;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000; /* Ensure it's above the canvas */
+}
+
+/* Add styles for the start modal */
+#start-modal {
+  position: fixed; /* Position it relative to the viewport */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+  display: flex; /* Use flexbox for centering */
+  justify-content: center;
+  align-items: center;
+  z-index: 100; /* Ensure it's on top */
+  color: lime; /* Bright lime green text */
+  font-family: 'Courier New', Courier, monospace; /* Retro monospace font */
+}
+
+#modal-content {
+  background-color: black; /* Solid black background for the content box */
+  border: 3px solid lime; /* Green outline */
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 0 20px lime; /* Optional: Add a green glow effect */
+}
+
+#modal-content h1 {
+  font-size: 2.5em; /* Larger title */
+  margin-bottom: 10px;
+  text-transform: uppercase; /* Uppercase for classic game titles */
+}
+
+#modal-content h2 {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+  font-style: italic;
+}
+
+#modal-content .press-key {
+  font-size: 1.5em;
+  margin-bottom: 30px;
+  animation: blink 1s step-start infinite; /* Blinking effect */
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+#modal-content .toggles {
+  margin-bottom: 30px;
+}
+
+#modal-content .toggles label {
+  margin: 0 15px; /* Space out toggles */
+  font-size: 1.1em;
+}
+
+/* Style checkboxes to look a bit more retro */
+#modal-content input[type="checkbox"] {
+  appearance: none; /* Remove default appearance */
+  width: 1em;
+  height: 1em;
+  border: 1px solid lime;
+  position: relative;
+  top: 2px; /* Align with text */
+  margin-right: 5px;
+}
+
+#modal-content input[type="checkbox"]:checked {
+  background-color: lime;
+}
+
+#modal-content .copyright {
+  font-size: 0.8em;
+  color: #bbb; /* Slightly dimmer color for copyright */
+}
+
+/* Styles for the Pause Modal */
+#pause-modal {
+  /* Reuse styles from start-modal */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  color: lime;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+#pause-modal-content {
+  /* Reuse styles from modal-content */
+  background-color: black;
+  border: 3px solid lime;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 0 20px lime;
+}
+
+#pause-modal-content h1 {
+  font-size: 2.5em;
+  margin-bottom: 30px; /* More space below title */
+  text-transform: uppercase;
+}
+
+/* Reuse toggle styles */
+#pause-modal-content .toggles {
+  margin-bottom: 30px;
+}
+
+#pause-modal-content .toggles label {
+  margin: 0 15px;
+  font-size: 1.1em;
+}
+
+#pause-modal-content input[type="checkbox"] {
+  appearance: none;
+  width: 1em;
+  height: 1em;
+  border: 1px solid lime;
+  position: relative;
+  top: 2px;
+  margin-right: 5px;
+}
+
+#pause-modal-content input[type="checkbox"]:checked {
+  background-color: lime;
+}
+
+#pause-modal-content .pause-instructions {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+}
+
+/* Reuse copyright style */
+#pause-modal-content .copyright {
+  font-size: 0.8em;
+  color: #bbb;
+}
+
+/* Styles for Modal Buttons (Pause & About) */
+.modal-buttons {
+    margin-top: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* Space between buttons */
+}
+
+.modal-button {
+    background-color: black;
+    color: lime;
+    border: 1px solid lime;
+    padding: 8px 15px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.modal-button:hover {
+    background-color: lime;
+    color: black;
+}
+
+/* Styles for Hamburger Menu */
+#hamburger-menu {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 40px; /* Increased width for padding */
+    height: 35px; /* Increased height for padding */
+    cursor: pointer;
+    z-index: 1001; /* Ensure it's above other UI but potentially below modals */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* New styles for consistency */
+    background-color: rgba(0, 0, 0, 0.7); /* Match other UI elements */
+    border: 1px solid lime; /* Add green border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 5px; /* Add padding around the lines */
+}
+
+#hamburger-menu div {
+    width: 100%;
+    height: 4px;
+    background-color: lime; /* Match retro theme */
+    border-radius: 2px;
+}
+
+/* Styles for the About Modal */
+#about-modal {
+  /* Reuse styles from start/pause modals */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85); /* Slightly darker background */
+  display: none; /* Initially hidden */
+  justify-content: center;
+  align-items: center;
+  z-index: 1002; /* Highest z-index */
+  color: lime;
+  font-family: 'Courier New', Courier, monospace;
+  /* overflow-y: auto; Removed - scrolling handled by content */
+  padding: 40px 20px; /* Add vertical padding to prevent touching edges */
+}
+
+#about-modal-content {
+  /* Reuse styles from other modal contents */
+  background-color: black;
+  border: 3px solid lime;
+  padding: 30px 50px; /* Adjust padding */
+  text-align: left; /* Align text left for better readability */
+  box-shadow: 0 0 20px lime;
+  max-width: 800px; /* Limit width */
+  width: 90%; /* Responsive width */
+  position: relative; /* Needed for absolute positioning of close button */
+  /* margin: 20px 0; Removed - padding on parent handles spacing */
+  max-height: calc(100vh - 80px); /* Limit height (100% viewport height minus parent padding) */
+  overflow-y: auto; /* Enable vertical scrolling WITHIN the content box */
+  margin: auto; /* Helps ensure centering within flex parent */
+}
+
+/* Close button style */
+#about-close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: lime;
+    font-size: 2.5em;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+#about-close-button:hover {
+    color: white;
+}
+
+#about-modal-content h1 {
+  font-size: 2em; /* Slightly smaller H1 */
+  margin-bottom: 25px;
+  text-transform: uppercase;
+  text-align: center; /* Center the main title */
+  border-bottom: 1px solid lime; /* Add separator */
+  padding-bottom: 15px;
+}
+
+#about-modal-content h2 {
+  font-size: 1.4em;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  border-bottom: 1px dashed lime; /* Dashed separator for H2 */
+  padding-bottom: 5px;
+}
+
+#about-modal-content p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+    font-size: 1em;
+}
+
+#about-modal-content ul {
+    list-style: none; /* Remove default bullets */
+    padding-left: 20px; /* Indent list items */
+    margin-bottom: 15px;
+}
+
+#about-modal-content ul li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+#about-modal-content ul.controls-list {
+    list-style: none; /* Remove default bullets */
+    padding-left: 0; /* Remove default padding */
+    margin-bottom: 15px;
+    column-count: 2; /* Create two columns */
+    column-gap: 40px; /* Space between columns */
+}
+
+#about-modal-content ul.controls-list li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+    padding-left: 20px; /* Indent list items */
+    break-inside: avoid-column; /* Prevent items breaking across columns */
+}
+
+#about-modal-content ul.controls-list li::before {
+    content: '> ';
+    color: lime;
+    margin-right: 5px;
+    padding-left: 0; /* Remove default padding */
+    margin-bottom: 15px;
+    /* Consider columns for links if needed, but might be short enough */
+}
+
+#about-modal-content ul.tech-list li::before {
+    content: '* ';
+    color: lime;
+    margin-right: 5px;
+}
+
+#about-modal-content ul.links-list li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+     padding-left: 20px; /* Indent list items */
+}
+
+#about-modal-content ul.links-list li::before {
+    content: '- ';
+    color: lime;
+    margin-right: 5px;
+}
+
+#about-modal-content a {
+    color: lime; /* Green links */
+    text-decoration: underline;
+}
+
+#about-modal-content a:hover {
+    color: white; /* White on hover */
+}
+
+/* Reuse copyright style */
+#about-modal-content .copyright {
+  font-size: 0.8em;
+  color: #bbb;
+  margin-top: 30px;
+  text-align: center; /* Center copyright */
+  border-top: 1px solid lime; /* Separator above copyright */
+  padding-top: 15px;
+}
+
+/* Add other general styles here if needed */
