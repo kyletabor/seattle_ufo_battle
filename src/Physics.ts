@@ -31,6 +31,9 @@ export class PhysicsEngine {
     private moveDirection: THREE.Vector3;
     private initialSpeed: number;
     private enabled: boolean = true;
+    
+    // Keep track of pre-pause state
+    private pausedRotation: THREE.Quaternion | null = null;
 
     constructor(plane: THREE.Object3D) {
         this.plane = plane;
@@ -114,9 +117,29 @@ export class PhysicsEngine {
 
     /**
      * Enables or disables the physics simulation.
+     * When disabling, preserves the current rotation state.
+     * When enabling, restores the rotation state if previously preserved.
+     * 
      * @param {boolean} enabled Whether physics should be enabled (true) or disabled (false).
      */
     public setEnabled(enabled: boolean): void {
+        // If we're pausing the physics engine
+        if (this.enabled && !enabled) {
+            // Store current rotation state
+            this.pausedRotation = new THREE.Quaternion().copy(this.rotationQuaternion);
+            console.log("Physics engine paused, stored rotation state");
+        }
+        // If we're unpausing the physics engine
+        else if (!this.enabled && enabled) {
+            // Restore rotation state if we have one saved
+            if (this.pausedRotation) {
+                this.rotationQuaternion.copy(this.pausedRotation);
+                this.plane.quaternion.copy(this.rotationQuaternion);
+                console.log("Physics engine unpaused, restored rotation state");
+                this.pausedRotation = null; // Clear the saved state
+            }
+        }
+        
         this.enabled = enabled;
         console.log(`PhysicsEngine ${enabled ? 'enabled' : 'disabled'}`);
     }
@@ -132,6 +155,9 @@ export class PhysicsEngine {
     /**
      * Resets the physics state (speed, rotation, etc.) to initial values.
      * Uses predefined defaults or initial state values if available.
+     * 
+     * Note: This should ONLY be called when intentionally resetting the game,
+     * not during normal pause/unpause operations.
      */
     public reset(): void {
         console.log("Resetting PhysicsEngine");
@@ -140,6 +166,7 @@ export class PhysicsEngine {
         this.plane.quaternion.copy(this.rotationQuaternion);
         this.currentPitchRate = 0;
         this.currentRollRate = 0;
+        this.pausedRotation = null;
     }
 
     /**

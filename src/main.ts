@@ -73,10 +73,13 @@ let camera = new THREE.PerspectiveCamera(
 );
 
 // Set up renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true,
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Limit pixel ratio even more
 renderer.shadowMap.enabled = true;
+
 document.body.appendChild(renderer.domElement);
 
 // Camera positioning
@@ -89,6 +92,11 @@ controls.dampingFactor = 0.05;
 
 // Setup input controller for player controls
 const inputController = new InputController();
+
+// Performance settings
+const MAX_FRAME_TIME = 0.1; // Maximum allowed frame time in seconds (prevents jumps)
+const TARGET_FRAME_RATE = 60; // Target frame rate for smoother rendering
+let lastFrameTime = 0; // Track last frame time for frame rate limiting
 
 // Grid helper - useful for development
 // const gridHelper = new THREE.GridHelper(10000, 100, 0x444444, 0x888888);
@@ -119,6 +127,10 @@ let musicEnabled = false; // Default music OFF
 
 // Add clock for delta time calculation
 const clock = new THREE.Clock();
+// We'll add a variable to track if the clock is paused
+let isClockPaused = false;
+// Track the time at which the game was paused
+let pauseTimeStamp = 0;
 
 // Debug counter for animation frames
 let frameCount = 0;
@@ -160,8 +172,47 @@ loadTerrainAndEnvironment();
 // Declare ui variable here, initially null
 let ui: UI | null = null;
 
-// Placeholder function definition, will be properly defined within animate()
-let handlePauseKeys: (event: KeyboardEvent) => void = () => {};
+// Move definition outside animate loop
+const handlePauseKeys = (event: KeyboardEvent) => {
+    // Remove cooldown logic
+    // console.log(`>>> handlePauseKeys TRIGGERED at ${now.toFixed(0)}ms for key: ${event.key}`); // REMOVE DEBUG LOG
+    const now = performance.now(); // Keep this if used elsewhere, or remove if only for debug log
+
+    console.log(`Key pressed while paused: ${event.key}, AboutOpen: ${isAboutModalOpen}, UserPaused: ${isUserPaused}`);
+    
+    // Handle Escape key press
+    if (event.key === 'Escape') {
+        if (isAboutModalOpen) {
+            console.log("Escape pressed while About modal open, closing modal...");
+            closeAboutModal();
+        } else if (isUserPaused) { // Only unpause if it was user-initiated pause
+            console.log("Escape pressed while game paused (user), unpausing...");
+            isUserPaused = false;
+            updatePauseState(); // Update master pause state
+        }
+        return; // Stop further processing for Escape key
+    }
+    
+    // Handle 'P' key press (toggle pause or close About modal)
+    if (event.key === 'p' || event.key === 'P') {
+         if (isAboutModalOpen) {
+            console.log("P pressed while About modal open, closing modal...");
+            closeAboutModal();
+        } else if (isUserPaused) { 
+            console.log("P pressed while game paused (user), unpausing...");
+            isUserPaused = false;
+            updatePauseState(); 
+        }
+        // Note: If game is unpaused, 'P' is handled by the inputController toggle logic directly
+        return;
+    }
+    
+    // Handle 'R' key press for restart (only when paused and About is not open)
+    if (isPaused && !isAboutModalOpen && (event.key === 'r' || event.key === 'R')) {
+        console.log("Restarting game...");
+        window.location.reload(); // Simple restart by reloading page
+    }
+};
 
 // Add restart key handler for game over / victory screens
 window.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -631,12 +682,34 @@ function animate() {
 		console.log(`Animation frame: ${frameCount} - Game state: ${gameStatus}, Paused: ${isPaused}`);
 	}
 	
-	// Get delta time for physics and animations
-	const deltaTime = clock.getDelta();
+	// Frame rate limiting to prevent excessive CPU usage
+	const currentTime = performance.now();
+	const timeSinceLastFrame = (currentTime - lastFrameTime) / 1000; // Convert to seconds
 	
-    // --- Always render the scene, even when paused --- 
-    renderer.render(scene, camera);
-
+	if (timeSinceLastFrame < (1 / TARGET_FRAME_RATE)) {
+		// Don't process this frame if we're running too fast
+		requestAnimationFrame(animate); // Request next frame but skip processing this one
+		return;
+	}
+	
+	lastFrameTime = currentTime;
+	
+	// Get delta time for physics and animations - Modified to handle pause gracefully
+	let deltaTime = 0;
+	if (!isClockPaused) {
+		deltaTime = clock.getDelta();
+		
+		// Clamp deltaTime to prevent physics jumps after long pauses
+		// or when system performance causes large gaps
+		if (deltaTime > MAX_FRAME_TIME) {
+			console.log(`Clamping large delta: ${deltaTime.toFixed(4)} -> ${MAX_FRAME_TIME}`);
+			deltaTime = MAX_FRAME_TIME;
+		}
+	}
+	
+	// --- Always render the scene, even when paused --- 
+	renderer.render(scene, camera);
+    
     // --- Handle Input Controller Update --- 
     // Update input regardless of pause state to catch pause toggle
 	inputController.update();
@@ -646,227 +719,158 @@ function animate() {
     const pauseSoundToggle = document.getElementById('pause-sound-toggle') as HTMLInputElement;
     const pauseMusicToggle = document.getElementById('pause-music-toggle') as HTMLInputElement;
 
-    // Function to handle unpausing (simplified, now handled by updatePauseState)
-    // const unpauseGame = () => { ... }; // Removed old function
-
-    // Function to handle pausing (simplified, now handled by updatePauseState)
-    // const pauseGame = () => { ... }; // Removed old function
-
     // --- NEW: Update overall pause state --- 
     updatePauseState(); // Centralized pause logic
 
-    // Re-defining handlePauseKeys here inside animate to ensure it captures current state.
-    handlePauseKeys = (event: KeyboardEvent) => {
-        // console.log(`Key pressed while paused: ${event.key}, AboutOpen: ${isAboutModalOpen}, UserPaused: ${isUserPaused}`);
-        
-        // Handle Escape key press
-        if (event.key === 'Escape') {
-            if (isAboutModalOpen) {
-                // console.log("Escape pressed while About modal open, closing modal...");
-                closeAboutModal();
-            } else if (isUserPaused) { // Only unpause if it was user-initiated pause
-                // console.log("Escape pressed while game paused (user), unpausing...");
-                isUserPaused = false;
-                updatePauseState(); // Update master pause state
-            }
-            return; // Stop further processing for Escape key
-        }
-        
-        // Handle 'P' key press (toggle pause or close About modal)
-        if (event.key === 'p' || event.key === 'P') {
-             if (isAboutModalOpen) {
-                // console.log("P pressed while About modal open, closing modal...");
-                closeAboutModal();
-            } else if (isUserPaused) { 
-                // console.log("P pressed while game paused (user), unpausing...");
-                isUserPaused = false;
-                updatePauseState(); 
-            }
-            // Note: If game is unpaused, 'P' is handled by the inputController toggle logic directly
-            return;
-        }
-        
-        // Handle 'R' key press for restart (only when paused and About is not open)
-        if (isPaused && !isAboutModalOpen && (event.key === 'r' || event.key === 'R')) {
-            // console.log("Restarting game...");
-            window.location.reload(); // Simple restart by reloading page
-        }
-    };
-    // Listener adding/removing is handled within updatePauseState() correctly
-
-    // Check for pause toggle input ('P' key) AFTER start modal is dismissed
-	if (isGameStarted && inputController.didTogglePause()) {
-         // If About modal is open, treat 'P' as closing it
-         if (isAboutModalOpen) {
-             // console.log("Pause toggle input detected while About open, closing modal...");
-             closeAboutModal();
-         } else {
-             // Otherwise, toggle the user pause state
-             // console.log("Pause toggle input detected, toggling user pause...");
-             isUserPaused = !isUserPaused;
-             updatePauseState(); // Update master pause state
-         }
-	}
-	
     // --- Skip game logic updates if paused --- 
     // Use the master `isPaused` state
 	if (isPaused) {
         // Update controls even when paused to allow camera movement (OrbitControls)
         controls.update(); 
-		requestAnimationFrame(animate);
-		return; // Skip the rest of the game logic
-	}
-	
-    // --- Game Logic (Only runs if not paused) --- 
-
-	// Update orbit controls (used when camera is not following plane)
-	controls.update();
-	
-	// Update camera controller if it exists
-	cameraController?.update(deltaTime); // Use optional chaining
-
-    // --- Update Audio Listener Position ---
-    if (audioManager && cameraController) {
-        // Get camera position and orientation for the listener
-        const listenerPosition = new THREE.Vector3();
-        camera.getWorldPosition(listenerPosition);
-
-        const listenerForward = new THREE.Vector3();
-        camera.getWorldDirection(listenerForward);
+		// DO NOT return early here to ensure we request the next frame
+	} else {
+        // --- Game Logic (Only runs if not paused) ---
+    
+        // Update orbit controls (used when camera is not following plane)
+        controls.update();
         
-        const listenerUp = new THREE.Vector3().copy(camera.up); // Get camera's up vector
-
-        audioManager.updateListenerPosition(listenerPosition, listenerForward, listenerUp);
+        // Update camera controller if it exists
+        cameraController?.update(deltaTime); // Use optional chaining
+    
+        // --- Update Audio Listener Position ---
+        if (audioManager && cameraController) {
+            // Get camera position and orientation for the listener
+            const listenerPosition = new THREE.Vector3();
+            camera.getWorldPosition(listenerPosition);
+    
+            const listenerForward = new THREE.Vector3();
+            camera.getWorldDirection(listenerForward);
+            
+            const listenerUp = new THREE.Vector3().copy(camera.up); // Get camera's up vector
+    
+            audioManager.updateListenerPosition(listenerPosition, listenerForward, listenerUp);
+        }
+    
+        // Handle shooting input
+        if (playerPlane && inputController.didShoot()) {
+            const currentTime = clock.elapsedTime;
+            if (currentTime - lastShotTime > SHOT_COOLDOWN) {
+                const projectile = playerPlane.shoot();
+                scene.add(projectile.mesh);
+                activeProjectiles.push(projectile);
+                lastShotTime = currentTime;
+                // Play shooting sound effect
+                audioManager?.playLaserShoot(); 
+            }
+        }
+        
+        // Update player plane physics if it exists
+        if (playerPlane && physicsEngine) {
+            // Get input values for plane control
+            const inputs = {
+                pitch: inputController.pitch, 
+                roll: inputController.roll, 
+                accelerate: inputController.accelerate, 
+                decelerate: inputController.decelerate 
+            };
+    
+            // Update physics with input values
+            physicsEngine.update(inputs, deltaTime);
+    
+            // Update propeller animation
+            playerPlane.update(deltaTime);
+    
+            // Update UI with current speed (using optional chaining for safety)
+            ui?.update(physicsEngine.getCurrentSpeed()); 
+        }
+    
+        // Update UFOs
+        ufos.forEach(ufo => {
+            ufo.update(deltaTime);
+        });
+        
+        // Update projectiles and check for collisions
+        for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+            const projectile = activeProjectiles[i];
+            const isActive = projectile.update(deltaTime);
+            
+            if (!isActive) {
+                // Remove expired projectile
+                scene.remove(projectile.mesh);
+                activeProjectiles.splice(i, 1);
+                continue;
+            }
+            
+            // Check for collisions with UFOs
+            for (let j = 0; j < ufos.length; j++) {
+                const ufo = ufos[j];
+                
+                // Skip hit detection for already hit UFOs
+                if (ufo.state !== 'flying') continue;
+                
+                // Simple distance-based collision detection
+                const distance = projectile.mesh.position.distanceTo(ufo.mesh.position);
+                if (distance < 25) { // Adjusted collision radius for larger UFOs
+                    // Hit the UFO
+                    ufo.hit();
+                    
+                    // Play UFO hit sound effect at the UFO's position
+                    audioManager?.playUfoHit(ufo.mesh.position.clone());
+    
+                    // Create a rainbow explosion effect at the hit position
+                    const explosion = new RainbowExplosion(ufo.mesh.position.clone());
+                    scene.add(explosion.points);
+                    
+                    // Increase the score and UFO destroyed count
+                    playerScore += 10000;
+                    ufosDestroyed++;
+                    
+                    // Check if all UFOs have been destroyed
+                    if (ufosDestroyed >= totalUfos) {
+                        handleVictory();
+                    }
+                    
+                    // Update UI with new score
+                    if (ui) {
+                        ui.updateScore(playerScore);
+                    }
+                    
+                    // Remove projectile
+                    scene.remove(projectile.mesh);
+                    activeProjectiles.splice(i, 1);
+                    break;
+                }
+            }
+        }
+    
+        // Check Space Needle health
+        if (spaceNeedle && spaceNeedle.getHealth() <= 0) {
+            // Space Needle has been destroyed
+            handleGameOver();
+        }
+        
+        // Update Space Needle health UI
+        if (spaceNeedle && ui) {
+            ui.updateSpaceNeedleHealth(spaceNeedle.getHealth());
+        }
+    
+        // Check for UFO crashes (state changed to 'crashed')
+        for (let i = ufos.length - 1; i >= 0; i--) {
+            const ufo = ufos[i];
+            if (ufo.needsCrashEffect) {
+                // Play crash sound effect at the UFO's final position
+                audioManager?.playUfoCrash(ufo.mesh.position.clone()); 
+                
+                // Create visual explosion (Mushroom Cloud)
+                const explosion = new MushroomCloudExplosion(ufo.mesh.position.clone());
+                scene.add(explosion.points);
+                
+                // Reset the flag
+                ufo.needsCrashEffect = false; 
+            }
+        }
     }
-
-	// Handle shooting input
-	if (playerPlane && inputController.didShoot()) {
-		const currentTime = clock.elapsedTime;
-		if (currentTime - lastShotTime > SHOT_COOLDOWN) {
-			const projectile = playerPlane.shoot();
-			scene.add(projectile.mesh);
-			activeProjectiles.push(projectile);
-			lastShotTime = currentTime;
-            // Play shooting sound effect
-            audioManager?.playLaserShoot(); 
-		}
-	}
-	
-	// Update player plane physics if it exists
-	if (playerPlane && physicsEngine) {
-		// Get input values for plane control
-		const inputs = {
-			pitch: inputController.pitch, 
-			roll: inputController.roll, 
-			accelerate: inputController.accelerate, 
-			decelerate: inputController.decelerate 
-		};
-
-		// Log plane positions and movement occassionally
-		if (Math.random() < 0.01) { // Only log 1% of the time to avoid console spam
-			// console.log(`Plane position: (${playerPlane.mesh.position.x.toFixed(1)}, ${playerPlane.mesh.position.y.toFixed(1)}, ${playerPlane.mesh.position.z.toFixed(1)})`);
-			// console.log(`Inputs: pitch=${inputs.pitch}, roll=${inputs.roll}, accel=${inputs.accelerate}, decel=${inputs.decelerate}`);
-		}
-
-		// Update physics with input values
-		physicsEngine.update(inputs, deltaTime);
-
-		// Update propeller animation
-		playerPlane.update(deltaTime);
-
-		// Update UI with current speed (using optional chaining for safety)
-		ui?.update(physicsEngine.getCurrentSpeed()); 
-	}
-
-	// Update UFOs
-	ufos.forEach(ufo => {
-		ufo.update(deltaTime);
-	});
-	
-	// Update projectiles and check for collisions
-	for (let i = activeProjectiles.length - 1; i >= 0; i--) {
-		const projectile = activeProjectiles[i];
-		const isActive = projectile.update(deltaTime);
-		
-		if (!isActive) {
-			// Remove expired projectile
-			scene.remove(projectile.mesh);
-			activeProjectiles.splice(i, 1);
-			continue;
-		}
-		
-		// Check for collisions with UFOs
-		for (let j = 0; j < ufos.length; j++) {
-			const ufo = ufos[j];
-			
-			// Skip hit detection for already hit UFOs
-			if (ufo.state !== 'flying') continue;
-			
-			// Simple distance-based collision detection
-			const distance = projectile.mesh.position.distanceTo(ufo.mesh.position);
-			if (distance < 25) { // Adjusted collision radius for larger UFOs
-				// Hit the UFO
-				ufo.hit();
-				
-                // Play UFO hit sound effect at the UFO's position
-                audioManager?.playUfoHit(ufo.mesh.position.clone());
-
-				// Create a rainbow explosion effect at the hit position
-				const explosion = new RainbowExplosion(ufo.mesh.position.clone());
-				scene.add(explosion.points);
-				
-				// Increase the score and UFO destroyed count
-				playerScore += 10000;
-				ufosDestroyed++;
-				
-				// Check if all UFOs have been destroyed
-				if (ufosDestroyed >= totalUfos) {
-				    handleVictory();
-				}
-				
-				// Update UI with new score
-				if (ui) {
-				    ui.updateScore(playerScore);
-				}
-				
-				// Remove projectile
-				scene.remove(projectile.mesh);
-				activeProjectiles.splice(i, 1);
-				break;
-			}
-		}
-	}
-
-	// Check Space Needle health
-	if (spaceNeedle && spaceNeedle.getHealth() <= 0) {
-	    // Space Needle has been destroyed
-	    handleGameOver();
-	}
-	
-	// Update Space Needle health UI
-	if (spaceNeedle && ui) {
-	    ui.updateSpaceNeedleHealth(spaceNeedle.getHealth());
-	}
-
-	// Check for UFO crashes (state changed to 'crashed')
-	for (let i = ufos.length - 1; i >= 0; i--) {
-		const ufo = ufos[i];
-		if (ufo.needsCrashEffect) {
-			// Play crash sound effect at the UFO's final position
-			audioManager?.playUfoCrash(ufo.mesh.position.clone()); 
-			
-			// Create visual explosion (Mushroom Cloud)
-			const explosion = new MushroomCloudExplosion(ufo.mesh.position.clone());
-			scene.add(explosion.points);
-			
-			// Reset the flag
-			ufo.needsCrashEffect = false; 
-			
-			// Optionally remove the UFO mesh after a delay or keep it as wreckage
-			// For now, we leave the crashed mesh
-		}
-	}
-
+    
 	// Request the next frame
 	requestAnimationFrame(animate);
 }
@@ -906,81 +910,76 @@ function closeAboutModal() {
 }
 
 /**
- * Centralized function to manage the overall pause state based on
+ * Centralized function to manage pause state changes between 
  * user pause requests and the About modal state.
  */
-let wasListenerAdded = false; // Track if the pause key listener is active
+let pauseListenerAdded = false; // DEBUG: Track if listener is added
 function updatePauseState() {
-    const pauseModal = document.getElementById('pause-modal');
-    const pauseSoundToggle = document.getElementById('pause-sound-toggle') as HTMLInputElement;
-    const pauseMusicToggle = document.getElementById('pause-music-toggle') as HTMLInputElement;
+    const wasPaused = isPaused; // Store previous state
+    const previousUserPaused = isUserPaused; // Store previous user pause state
+    const previousAboutOpen = isAboutModalOpen; // Store previous about open state
+    
+    // Determine the new pause state based on user pause or about modal
+    isPaused = isUserPaused || isAboutModalOpen;
 
-    // Determine the new master pause state
-    const newPauseState = isUserPaused || isAboutModalOpen;
+    // Log the state change details only if there's a change
+    if (isPaused !== wasPaused || isUserPaused !== previousUserPaused || isAboutModalOpen !== previousAboutOpen) {
+        console.log(`Pause state changing from ${wasPaused} to ${isPaused} (UserPaused: ${isUserPaused}, AboutOpen: ${isAboutModalOpen})`);
+    }
 
-    // State change detected?
-    if (newPauseState !== isPaused) {
-        console.log(`Pause state changing from ${isPaused} to ${newPauseState} (UserPaused: ${isUserPaused}, AboutOpen: ${isAboutModalOpen})`);
-        isPaused = newPauseState;
+    if (isPaused) {
+        if (!wasPaused) { // Only perform actions if changing *to* paused state
+            // Pause game subsystems
+            audioManager?.setMusicEnabled(false); // Optionally pause music
+            physicsEngine?.setEnabled(false); // Corrected: setEnabled(false) when pausing
+            inputController?.setPaused(true);
 
-        if (isPaused) {
-            // --- Actions when pausing --- 
-            // Stop music (unless already stopped by modal opening)
-            if (audioManager) audioManager.setMusicEnabled(false); 
-            if (physicsEngine) physicsEngine.setEnabled(false);
+            // Show pause overlay (reverting to pause-modal ID)
+            const pauseModal = document.getElementById('pause-modal'); 
+            if (pauseModal) pauseModal.style.display = 'flex';
 
-            // Show pause modal ONLY if paused by user AND about modal is NOT open
-            if (isUserPaused && !isAboutModalOpen && pauseModal && pauseSoundToggle && pauseMusicToggle) {
-                // Sync toggles in pause modal before showing
-                pauseSoundToggle.checked = soundFxEnabled;
-                pauseMusicToggle.checked = musicEnabled;
-                pauseModal.style.display = 'flex'; 
-            } else if (pauseModal) {
-                // Hide pause modal if paused for other reasons (e.g., About modal)
-                pauseModal.style.display = 'none'; 
-            }
-
-            // Add key listeners specific to the pause state (if not already added)
-            if (!wasListenerAdded) {
+            // Add key listener for unpausing and other pause actions
+            // Check if the listener is already added before adding
+            if (!pauseListenerAdded) { // DEBUG Check
+                // console.log(">>> Adding PAUSED state key listener (handlePauseKeys)."); // REMOVE DEBUG LOG
                 window.addEventListener('keydown', handlePauseKeys);
-                wasListenerAdded = true;
-                console.log("Added pause key listener.");
+                pauseListenerAdded = true; // DEBUG Mark as added
+            } else {
+                // This warning confirms the original suspicion
+                console.warn(">>> Attempted to add PAUSED key listener, but it wasn't marked as added."); // DEBUG Warn
             }
-
-        } else {
-             // --- Actions when unpausing --- 
-             // Hide the pause modal if it was visible
-             if (pauseModal) pauseModal.style.display = 'none';
-             
-             // Resume music based on user preference
-             if (audioManager) audioManager.setMusicEnabled(musicEnabled); 
-             if (physicsEngine) physicsEngine.setEnabled(true);
-
-             // Remove pause-specific key listeners (if added)
-             if (wasListenerAdded) {
-                 window.removeEventListener('keydown', handlePauseKeys);
-                 wasListenerAdded = false;
-                 console.log("Removed pause key listener.");
-             }
+            
+            // Store the time when the game was paused
+            pauseTimeStamp = performance.now();
         }
     } else {
-        // Even if pause state didn't change, ensure pause modal visibility is correct
-        // (e.g., if About modal opened while user was paused)
-        if (isPaused && pauseModal) {
-             if (isUserPaused && !isAboutModalOpen) {
-                 // Show pause modal if it should be visible but isn't
-                 if (pauseModal.style.display === 'none') {
-                     // Sync toggles just in case
-                     if(pauseSoundToggle) pauseSoundToggle.checked = soundFxEnabled;
-                     if(pauseMusicToggle) pauseMusicToggle.checked = musicEnabled;
-                     pauseModal.style.display = 'flex'; 
-                 }
-             } else {
-                 // Hide pause modal if it shouldn't be visible
-                 if (pauseModal.style.display !== 'none') {
-                     pauseModal.style.display = 'none';
-                 }
-             }
+        if (wasPaused) { // Only perform actions if changing *to* unpaused state
+            // Remove key listener for unpausing
+             // Check if the listener is marked as added before removing
+            if (pauseListenerAdded) { // DEBUG Check
+                // console.log(">>> Removing PAUSED state key listener (handlePauseKeys)."); // REMOVE DEBUG LOG
+                window.removeEventListener('keydown', handlePauseKeys);
+                pauseListenerAdded = false; // DEBUG Mark as removed
+            } else {
+                // This warning confirms the original suspicion
+                console.warn(">>> Attempted to remove PAUSED key listener, but it wasn't marked as added."); // DEBUG Warn
+            }
+
+            // Calculate how long the game was paused
+            if (pauseTimeStamp !== null && pauseTimeStamp !== 0) { // Check against 0 as well
+                const pauseDuration = performance.now() - pauseTimeStamp;
+                console.log(`Game was paused for ${pauseDuration.toFixed(0)}ms`);
+                pauseTimeStamp = 0; // Reset pause start time to 0
+            }
+            
+            // Resume game subsystems
+            audioManager?.setMusicEnabled(musicEnabled); // Use global musicEnabled variable
+            physicsEngine?.setEnabled(true); // Corrected method name
+            inputController?.setPaused(false);
+
+            // Hide pause overlay (reverting to pause-modal ID)
+            const pauseModal = document.getElementById('pause-modal');
+            if (pauseModal) pauseModal.style.display = 'none';
         }
     }
 }
@@ -1021,8 +1020,20 @@ async function shareGame() {
  * Initializes the Three.js scene, camera, renderer, etc.
  */
 function initThreeJS() {
-// ... existing code ...
-
+    // ... existing renderer setup code ...
+    
+    // Add these lines to improve renderer performance
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio
+    
+    // Enable the WebGL internal anti-aliasing
+    const canvas = renderer.domElement;
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (gl) {
+        gl.getExtension('OES_standard_derivatives');  
+        console.log('Enabled WebGL extensions for better rendering');
+    }
+    
+    // ... rest of the initialization code ...
 }
 
 /**
@@ -1058,3 +1069,29 @@ function handleVictory() {
         ui.showVictory(playerScore, needleHealthBonus, finalScore);
     }
 }
+
+/**
+ * Toggles the user-initiated pause state and updates the overall game pause status.
+ * This function is intended to be called directly by input handlers (e.g., 'P' key press).
+ */
+function toggleUserPause() {
+    // Allow toggle only if game has started and About modal is NOT open
+    if (!isGameStarted) {
+        console.log("Cannot toggle pause - game not started.");
+        return;
+    }
+    if (isAboutModalOpen) {
+        console.log("Cannot toggle user pause - About modal is open.");
+        // Pressing P while About is open should close it instead
+        closeAboutModal(); 
+        return;
+    }
+
+    const now = performance.now(); // Keep this if used elsewhere, or remove if only for debug log
+    // console.log(`toggleUserPause called at ${now.toFixed(0)}ms, toggling user pause to: ${!isUserPaused}`); // REMOVE DEBUG LOG
+    isUserPaused = !isUserPaused;
+    updatePauseState(); // Update master pause state
+}
+
+// Assign the global function for InputController to find
+(window as any).toggleUserPause = toggleUserPause;

@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 
+// Declare the global function type we expect to find
+declare global {
+    function toggleUserPause(): void;
+}
+
 /**
  * Manages user input for controlling the plane and camera.
  */
@@ -13,16 +18,19 @@ export class InputController {
     public accelerate: number = 0; // Using 0 or 1 for simplicity
     public decelerate: number = 0; // Using 0 or 1 for simplicity
     public toggleCamera: boolean = false; // Will be true for one frame on key press
-    public togglePause: boolean = false; // Will be true for one frame on key press
     public shoot: boolean = false; // Will be true for one frame when space is pressed
     public toggleDebug: boolean = false; // Will be true for one frame on key press
 
-    // Sensitivity/Configuration (can be moved elsewhere if needed)
-    // These might be better placed in Physics or a config file,
-    // but keeping here for initial setup simplicity.
-    // private pitchSensitivity = 0.8;
-    // private turnSensitivity = 1.5;
-    // private rollSensitivity = 2.0;
+    // Add a flag to prevent input processing while paused
+    private isPaused: boolean = false;
+    
+    // Store pre-pause input state
+    private pausedInputState: {
+        pitch: number,
+        roll: number,
+        accelerate: number,
+        decelerate: number
+    } | null = null;
 
     constructor() {
         // Add event listeners for keydown and keyup
@@ -36,6 +44,12 @@ export class InputController {
      * @param {KeyboardEvent} event The keyboard event.
      */
     private handleKeyDown(event: KeyboardEvent): void {
+        // Ignore all game input if the controller is paused
+        if (this.isPaused) {
+            // console.log("InputController is paused, ignoring keydown: ", event.key);
+            return;
+        }
+
         const key = event.key.toLowerCase();
         // console.log(`Key pressed: ${key}`);
         this.keysPressed[key] = true;
@@ -47,10 +61,15 @@ export class InputController {
         }
         // Handle pause toggle on key down using 'p' key
         if (key === 'p') {
-             // We don't need preventDefault for 'p'
-            // event.preventDefault();
-            // console.log("Pause toggle triggered");
-            this.togglePause = true; // Set flag for one update cycle
+            // We don't need preventDefault for 'p'
+            // Directly call the global toggle function instead of setting a flag
+            // Ensure the global function exists before calling
+            if (typeof toggleUserPause === 'function') {
+                // console.log("Pause toggle triggered in InputController, calling global toggleUserPause()");
+                toggleUserPause();
+            } else {
+                console.error("toggleUserPause function not found on global scope!");
+            }
         }
         // Handle shooting on key down using spacebar
         if (key === ' ') {
@@ -71,6 +90,35 @@ export class InputController {
      */
     private handleKeyUp(event: KeyboardEvent): void {
         this.keysPressed[event.key.toLowerCase()] = false;
+    }
+
+    /**
+     * Sets the pause state of the input controller.
+     * When paused, stores current input state.
+     * When unpaused, can optionally restore previous input state.
+     * 
+     * @param {boolean} paused Whether the game is paused
+     */
+    public setPaused(paused: boolean): void {
+        // If we're pausing
+        if (!this.isPaused && paused) {
+            // Store current input state
+            this.pausedInputState = {
+                pitch: this.pitch,
+                roll: this.roll,
+                accelerate: this.accelerate,
+                decelerate: this.decelerate
+            };
+            console.log("Input controller paused, stored input state");
+        }
+        // If we're unpausing
+        else if (this.isPaused && !paused) {
+            // Don't automatically restore state - let the update method read from keys
+            // This prevents problems with "stuck" keys if they were released during pause
+            console.log("Input controller unpaused");
+        }
+        
+        this.isPaused = paused;
     }
 
     /**
@@ -129,16 +177,6 @@ export class InputController {
     public didToggleCamera(): boolean {
         const toggled = this.toggleCamera;
         this.toggleCamera = false; // Reset after checking
-        return toggled;
-    }
-
-    /**
-     * Checks if the pause toggle key ('p') was pressed and resets the flag.
-     * @returns {boolean} True if the pause toggle key was pressed this frame.
-     */
-    public didTogglePause(): boolean {
-        const toggled = this.togglePause;
-        this.togglePause = false; // Reset after checking
         return toggled;
     }
 
