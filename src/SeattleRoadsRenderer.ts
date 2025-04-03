@@ -24,9 +24,9 @@ const ROAD_OPACITY = 0.9; // Opacity of road materials
 export async function loadAndRenderSeattleRoads(scene: THREE.Scene): Promise<void> {
   try {
     console.log("Loading Seattle roads...");
-    const response = await fetch('/seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson');
+    const response = await fetch('./seattle_data/roads/Snow_and_Ice_Routes_-876656044780789844.geojson');
     if (!response.ok) {
-      throw new Error(`Failed to load road data: ${response.statusText}`);
+      throw new Error('Failed to load roads data');
     }
     
     const data = await response.json();

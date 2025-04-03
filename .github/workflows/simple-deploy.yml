@@ -1,0 +1,31 @@
+name: Deploy to GitHub Pages (Simple)
+
+on:
+  # Trigger deployment on push to main branch
+  push:
+    branches: [ main ]
+  # Allow manual triggering from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          lfs: true  # Ensure large files are checked out
+
+      # Create .nojekyll file
+      - name: Create .nojekyll file
+        run: touch .nojekyll
+
+      # Deploy directly to GitHub Pages without building
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: . # Deploy the entire repository
+          branch: gh-pages # The branch the action should deploy to
+          clean: false # Don't remove existing files 

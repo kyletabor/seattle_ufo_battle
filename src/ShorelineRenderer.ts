@@ -28,7 +28,7 @@ export async function loadAndRenderShorelines(scene: THREE.Scene): Promise<void>
     
     try {
       // Attempt to load the shoreline data, but handle the case where the file doesn't exist
-      const response = await fetch('/seattle_data/shorline/Shoreline_8101522534321349051.geojson');
+      const response = await fetch('./seattle_data/shorline/Shoreline_8101522534321349051.geojson');
       if (!response.ok) {
         throw new Error(`Failed to load shoreline data: ${response.statusText}`);
       }
