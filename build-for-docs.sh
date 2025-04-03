@@ -62,12 +62,14 @@ fi
 echo "Copying audio files..."
 if [ -d "public/audio" ]; then
   echo "  - Copying audio directory from public/audio to docs/audio"
-  cp -r public/audio/* docs/audio/
+  # Use rsync or ensure destination exists and copy contents
+  mkdir -p docs/audio
+  cp -R public/audio/* docs/audio/
 else
   echo "WARNING: public/audio directory not found!"
 fi
 
-# Create audio-paths.js to fix audio paths on GitHub Pages
+# Create audio-paths.js AFTER build and copy steps
 echo "Creating audio path correction script..."
 cat > docs/audio-paths.js << 'EOL'
 // audio-paths.js - Dynamically adjusts audio paths for GitHub Pages deployment
@@ -77,22 +79,22 @@ cat > docs/audio-paths.js << 'EOL'
   function adjustAudioPaths() {
     // Check if we're on GitHub Pages
     const isGitHubPages = window.location.hostname.includes('github.io');
-    
+
     if (isGitHubPages) {
       console.log('GitHub Pages detected - adjusting audio paths');
-      
+
       // Extract repository name from URL to use as the base path
       const pathParts = window.location.pathname.split('/');
       const repoName = pathParts[1]; // Second part of path is the repo name
       const basePath = repoName ? `/${repoName}` : '';
-      
+
       console.log(`Repository name detected: ${repoName}`);
       console.log(`Base path set to: ${basePath}`);
-      
+
       // Set a global variable for the audio path
       window.AUDIO_BASE_PATH = `${basePath}/audio`;
       console.log(`Audio base path set to: ${window.AUDIO_BASE_PATH}`);
-      
+
       // Monkey patch the fetch API to rewrite audio URLs
       const originalFetch = window.fetch;
       window.fetch = function(url, options) {
@@ -103,7 +105,7 @@ cat > docs/audio-paths.js << 'EOL'
             console.log(`Audio URL rewritten: ${url} → ${newUrl}`);
             return originalFetch(newUrl, options);
           }
-          
+
           // Also handle without leading slash
           if (url.startsWith('audio/')) {
             const newUrl = `${basePath}/audio/${url.substring(6)}`;
@@ -113,7 +115,7 @@ cat > docs/audio-paths.js << 'EOL'
         }
         return originalFetch(url, options);
       };
-      
+
       // Also create a utility function for direct use
       window.resolveAudioUrl = function(audioPath) {
         if (audioPath.startsWith('/audio/')) {
@@ -124,17 +126,17 @@ cat > docs/audio-paths.js << 'EOL'
         }
         return audioPath;
       };
-      
+
       // Set a hook for when audio files are loaded
       document.addEventListener('audioLoading', function(e) {
         console.log('Audio loading event detected, path fixing enabled');
       });
     }
   }
-  
+
   // Run the adjustment function immediately
   adjustAudioPaths();
-  
+
   // Also run when the DOM is loaded (as a backup)
   document.addEventListener('DOMContentLoaded', adjustAudioPaths);
 })();
@@ -186,6 +188,15 @@ for audio_file in "${AUDIO_FILES[@]}"; do
     echo "✅ FOUND: docs/audio/$audio_file"
   fi
 done
+
+# Check audio paths script
+if [ ! -f "docs/audio-paths.js" ]; then
+  echo "❌ MISSING: docs/audio-paths.js"
+  MISSING_FILES=$((MISSING_FILES+1))
+else
+  echo "✅ FOUND: docs/audio-paths.js"
+fi
+
 
 # Summary
 echo ""
