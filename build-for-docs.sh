@@ -142,6 +142,21 @@ cat > docs/audio-paths.js << 'EOL'
 })();
 EOL
 
+# Inject the audio path correction script into index.html
+echo "Injecting audio-paths.js script into docs/index.html..."
+# Use sed to find the main module script tag (e.g., <script type="module" ... src="./assets/index-....js">) and insert the audio-paths.js script before it.
+# Note: The sed command uses -i '' for macOS compatibility.
+sed -i '' '/<script type=\"module\".*src=\"\.\/assets\/index-/i\
+<script src="./audio-paths.js"></script>' docs/index.html
+
+# Check if injection worked (optional but good practice)
+if grep -q '<script src="./audio-paths.js"></script>' docs/index.html; then
+  echo "  ✅ Successfully injected audio-paths.js script tag."
+else
+  echo "  ❌ FAILED to inject audio-paths.js script tag! Manual check needed."
+  # Consider adding more robust error handling or alternative methods if sed fails
+fi
+
 # Verify the copied files
 echo ""
 echo "Verifying copied files..."
